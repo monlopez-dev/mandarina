@@ -133,15 +133,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\Dibujo de Primitivas 2D\Shader.h" />
-    <ClInclude Include="..\..\MonPrac04\ModeladoGeometrico\Shader.h" />
+    <ClInclude Include="..\..\Modelado Jerárquico\Shader.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\MonPrac04\ModeladoGeometrico\Main_Modelado.cpp" />
+    <ClCompile Include="Modelado_Jerarquico.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\MonPrac04\ModeladoGeometrico\Shader\core.frag" />
-    <None Include="..\..\MonPrac04\ModeladoGeometrico\Shader\core.vs" />
+    <None Include="Shader\core.frag" />
+    <None Include="Shader\core.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

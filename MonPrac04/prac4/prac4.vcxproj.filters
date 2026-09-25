@@ -18,21 +18,21 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\ModeladoGeometrico\Shader\core.frag">
-      <Filter>Archivos de origen\Shader</Filter>
-    </None>
-    <None Include="..\ModeladoGeometrico\Shader\core.vs">
-      <Filter>Archivos de origen\Shader</Filter>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="..\ModeladoGeometrico\Shader.h">
-      <Filter>Archivos de encabezado</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="..\ModeladoGeometrico\Main_Modelado.cpp">
+    <ClCompile Include="..\..\Modelado Jerárquico\Modelado_Jerarquico.cpp">
       <Filter>Archivos de origen</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\Modelado Jerárquico\Shader\core.frag">
+      <Filter>Archivos de origen\Shader</Filter>
+    </None>
+    <None Include="..\..\Modelado Jerárquico\Shader\core.vs">
+      <Filter>Archivos de origen\Shader</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\Modelado Jerárquico\Shader.h">
+      <Filter>Archivos de encabezado</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
