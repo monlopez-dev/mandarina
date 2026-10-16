@@ -123,6 +123,8 @@ int main( )
         shader.Use();
 
         glm::mat4 view = camera.GetViewMatrix();
+
+
         glUniformMatrix4fv(glGetUniformLocation(shader.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
         glUniformMatrix4fv(glGetUniformLocation(shader.Program, "view"), 1, GL_FALSE, glm::value_ptr(view));
 
@@ -130,6 +132,7 @@ int main( )
 
         // Gato
         glm::mat4 model = glm::mat4(1.0f);
+        glm::mat4 view = camera.GetViewMatrix();
         model = glm::translate(model, glm::vec3(-1.0f, 0.0f, 0.0f));
         model = glm::rotate(model, glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
         model = glm::scale(model, glm::vec3(0.2f));
