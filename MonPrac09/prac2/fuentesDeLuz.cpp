@@ -44,11 +44,15 @@ glm::vec3 lightPos(0.0f, 0.0f, 0.0f);
 bool active;
 
 // Positions of the point lights
+// CAMBIO: se distribuyeron cuatro luces y sus cubos en las esquinas del piso.
+// X/Z = +/-2.4 dejan los cubos dentro de los bordes del piso, ubicados en +/-2.5.
+// Y = -0.284 apoya cubos de altura 0.2 sobre el piso situado en Y = -0.384.
 glm::vec3 pointLightPositions[] = {
 	glm::vec3(2.4f, -0.284f,  2.4f),
 	glm::vec3(-2.4f, -0.284f,  2.4f),
 	glm::vec3(2.4f, -0.284f, -2.4f),
 	glm::vec3(-2.4f, -0.284f, -2.4f),
+	// La quinta posicion queda reservada: el ciclo actual solo dibuja cuatro cubos.
 	glm::vec3(0.0f, -0.284f,  0.0f) // Marcador visual: no es una quinta luz.
 };
 
@@ -155,6 +159,8 @@ int main()
 	Shader lightingShader("Shader/lighting.vs", "Shader/lighting.frag");
 	Shader lampShader("Shader/lamp.vs", "Shader/lamp.frag");
 
+	// CAMBIO: se sustituyo RedDog.obj por ball.obj para mostrar una pelota.
+	// Se conserva el nombre Dog; por eso Dog.Draw() ahora dibuja la pelota.
 	Model Dog((char*)"Models/ball.obj");
 	Model Piso((char*)"Models/piso.obj");
 
@@ -194,8 +200,32 @@ int main()
 		glfwPollEvents();
 		DoMovement();
 
+		// El tiempo hace avanzar el sol. Un valor menor hace el ciclo mas lento.
+		float angulo = glfwGetTime() * 0.3f;
+
+		// La quinta posicion representa el sol.
+		// Seno y coseno forman un circulo de radio 4 alrededor del centro del piso.
+		pointLightPositions[4].x = 4.0f * cos(angulo);
+		pointLightPositions[4].y = -0.384f + 4.0f * sin(angulo);
+		pointLightPositions[4].z = 0.0f;
+
+		// La intensidad aumenta al subir el sol y disminuye al bajar.
+		float intensidadSol = sin(angulo);
+
+		// Cuando el sol esta debajo del piso, deja de iluminar.
+		if (intensidadSol < 0.0f)
+		{
+			intensidadSol = 0.0f;
+		}
+
 		// Clear the colorbuffer
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		// Fondo azul durante el dia y oscuro durante la noche.
+		glClearColor(
+			0.02f + 0.38f * intensidadSol,
+			0.02f + 0.58f * intensidadSol,
+			0.05f + 0.75f * intensidadSol,
+			1.0f
+		);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// OpenGL options
@@ -210,27 +240,41 @@ int main()
 		lightingShader.Use();
 
 		glUniform1i(glGetUniformLocation(lightingShader.Program, "diffuse"), 0);
-		glUniform1i(glGetUniformLocation(lightingShader.Program, "specular"),1);
+		glUniform1i(glGetUniformLocation(lightingShader.Program, "specular"), 1);
 
 		GLint viewPosLoc = glGetUniformLocation(lightingShader.Program, "viewPos");
 		glUniform3f(viewPosLoc, camera.GetPosition().x, camera.GetPosition().y, camera.GetPosition().z);
 
 
 		// Directional light
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.direction"), -0.2f, -1.0f, -0.3f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.ambient"), 0.0f, 0.0f, 0.0f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.diffuse"), 0.0f, 0.0f, 0.0f);
-		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.specular"), 0.0f, 0.0f, 0.0f);
+		// La luz viaja desde el sol hacia el centro del piso.
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.direction"),
+			-cos(angulo), -sin(angulo), 0.0f);
+
+		// Iluminacion ambiente del sol.
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.ambient"),
+			0.2f * intensidadSol, 0.2f * intensidadSol, 0.2f * intensidadSol);
+
+		// Iluminacion sobre las superficies orientadas hacia el sol.
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.diffuse"),
+			0.7f * intensidadSol, 0.7f * intensidadSol, 0.7f * intensidadSol);
+
+		// Reflejos producidos por el sol.
+		glUniform3f(glGetUniformLocation(lightingShader.Program, "dirLight.specular"),
+			0.3f * intensidadSol, 0.3f * intensidadSol, 0.3f * intensidadSol);
 
 
 
 		// Point light 1
+		// El seno del tiempo varia la intensidad; al activar Light1 = (1,1,0), pulsa en amarillo.
 		glm::vec3 lightColor;
 		lightColor.x = abs(sin(glfwGetTime() * Light1.x));
 		lightColor.y = abs(sin(glfwGetTime() * Light1.y));
 		lightColor.z = sin(glfwGetTime() * Light1.z);
 
 		// Colores de los cuatro focos y del marcador central.
+		// RGB: luz 1 variable, luz 2 magenta, luz 3 blanca y luz 4 cian.
+		// Este arreglo aun no se usa al dibujar; el color de los cubos depende de lamp.frag.
 		glm::vec3 lampColors[] = {
 			lightColor, glm::vec3(1.0f, 0.0f, 1.0f),
 			glm::vec3(1.0f), glm::vec3(0.0f, 1.0f, 1.0f),
@@ -238,10 +282,16 @@ int main()
 		};
 
 
+		// CAMBIO: la luz 1 toma la posicion del cubo 1 para coincidir con su marcador visual.
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].position"), pointLightPositions[0].x, pointLightPositions[0].y, pointLightPositions[0].z);
+		// Ambient: iluminacion base de esta luz; usa lightColor para variar con el tiempo.
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].ambient"), lightColor.x, lightColor.y, lightColor.z);
+		// Diffuse: tambien varia con lightColor y depende de la orientacion de la superficie.
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].diffuse"), lightColor.x, lightColor.y, lightColor.z);
+		// Specular: se establece amarillo (RGB 1,1,0) para dar ese tono a los reflejos.
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[0].specular"), 1.0f, 1.0f, 0.0f);
+		// Atenuacion: constant es la base; linear y quadratic reducen la luz con la distancia.
+		// Con (1, 0.045, 0.075), las zonas cercanas reciben mas luz que las lejanas.
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].constant"), 1.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].linear"), 0.045f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[0].quadratic"), 0.075f);
@@ -249,28 +299,37 @@ int main()
 
 
 		// Point light 2
+		// CAMBIO: se coloca la luz 2 en la esquina indicada por pointLightPositions[1].
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].position"), pointLightPositions[1].x, pointLightPositions[1].y, pointLightPositions[1].z);
+		// Se asigna magenta (RGB 1,0,1) a ambiente, difusa y especular para iluminar con ese tono.
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].ambient"), 1.0f, 0.0f, 1.0f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].diffuse"), 1.0f, 0.0f, 1.0f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[1].specular"), 1.0f, 0.0f, 1.0f);
+		// Se usa la misma atenuacion que en la luz 1 para reducir su alcance con la distancia.
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[1].constant"), 1.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[1].linear"), 0.045f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[1].quadratic"), 0.075f);
 
 		// Point light 3
+		// CAMBIO: se coloca la luz 3 en la esquina indicada por pointLightPositions[2].
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].position"), pointLightPositions[2].x, pointLightPositions[2].y, pointLightPositions[2].z);
+		// Se asigna blanco (RGB 1,1,1) a ambiente, difusa y especular para iluminar con ese tono.
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].ambient"), 1.0f, 1.0f, 1.0f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].diffuse"), 1.0f, 1.0f, 1.0f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[2].specular"), 1.0f, 1.0f, 1.0f);
+		// Se usa la misma atenuacion que en la luz 1 para reducir su alcance con la distancia.
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[2].constant"), 1.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[2].linear"), 0.045f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[2].quadratic"), 0.075f);
 
 		// Point light 4
+		// CAMBIO: se coloca la luz 4 en la esquina indicada por pointLightPositions[3].
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].position"), pointLightPositions[3].x, pointLightPositions[3].y, pointLightPositions[3].z);
+		// Se asigna cian (RGB 0,1,1) a ambiente, difusa y especular para iluminar con ese tono.
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].ambient"), 0.0f, 1.0f, 1.0f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].diffuse"), 0.0f, 1.0f, 1.0f);
 		glUniform3f(glGetUniformLocation(lightingShader.Program, "pointLights[3].specular"), 0.0f, 1.0f, 1.0f);
+		// Se usa la misma atenuacion que en la luz 1 para reducir su alcance con la distancia.
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[3].constant"), 1.0f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[3].linear"), 0.045f);
 		glUniform1f(glGetUniformLocation(lightingShader.Program, "pointLights[3].quadratic"), 0.075f);
@@ -341,7 +400,9 @@ int main()
 		model = glm::scale(model, glm::vec3(0.2f)); // Make it a smaller cube
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		// Draw the light object (using light's vertex attributes)
-		for (GLuint i = 0; i < 4; i++)
+		// Se dibujan cuatro cubos en las mismas posiciones que las cuatro luces puntuales.
+		// Dibujar los cuatro focos y el cubo que representa el sol.
+		for (GLuint i = 0; i < 5; i++)
 		{
 			model = glm::mat4(1);
 			model = glm::translate(model, pointLightPositions[i]);
